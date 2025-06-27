@@ -1,0 +1,27 @@
+export const fetchLeads = async (prompt, source) => {
+  console.log(`📤 Sending API request to backend:`);
+  console.log(`   URL: http://localhost:3001/api/leads`);
+  console.log(`   Source: ${source}`);
+  console.log(`   Prompt: ${prompt}`);
+
+  const requestBody = { source, prompt, maxResults: 50 };
+
+  const response = await fetch("http://localhost:3001/api/leads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`❌ API Error: ${response.status} ${response.statusText}`);
+    console.error(`   Response: ${errorText}`);
+    throw new Error(`API Error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  console.log(`📥 API Response received:`, data);
+
+  // Return the full response so we can access both leads and meta information
+  return data;
+};
