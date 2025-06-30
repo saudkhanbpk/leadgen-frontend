@@ -24,7 +24,7 @@ const MessageBubble = ({ message }) => {
           const parsedAuthData = JSON.parse(storedAuthData);
 
           // Validate the stored tokens
-          const response = await fetch('http://localhost:3001/api/auth/validate', {
+          const response = await fetch(`${import.meta.env.VITE_API_SERVER_URL}/api/auth/validate`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -150,7 +150,7 @@ const MessageBubble = ({ message }) => {
     window.addEventListener('googleAuthComplete', customEventListener);
 
     // Open the auth window
-    const authUrl = `http://localhost:3001/api/auth/google`;
+    const authUrl = `${import.meta.env.VITE_API_SERVER_URL}/api/auth/google`;
     window.open(authUrl, '_blank');
   };
 
@@ -178,7 +178,7 @@ const MessageBubble = ({ message }) => {
       // Check if token needs refresh
       let currentToken = authToken;
       if (authData && authData.expires_at && Date.now() >= authData.expires_at) {
-        const refreshResponse = await fetch('http://localhost:3001/api/auth/refresh', {
+        const refreshResponse = await fetch(`${import.meta.env.VITE_API_SERVER_URL}/api/auth/refresh`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -198,7 +198,7 @@ const MessageBubble = ({ message }) => {
         }
       }
 
-      const response = await fetch('http://localhost:3001/api/export/google-sheets/list', {
+      const response = await fetch(`${import.meta.env.VITE_API_SERVER_URL}/api/export/google-sheets/list`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -238,7 +238,7 @@ const MessageBubble = ({ message }) => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/export/google-sheets', {
+      const response = await fetch(`${import.meta.env.VITE_API_SERVER_URL}/api/export/google-sheets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -275,7 +275,7 @@ const MessageBubble = ({ message }) => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/export/google-sheets', {
+      const response = await fetch(`${import.meta.env.VITE_API_SERVER_URL}/api/export/google-sheets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,12 +1,12 @@
 export const fetchLeads = async (prompt, source) => {
   console.log(`📤 Sending API request to backend:`);
-  console.log(`   URL: http://localhost:3001/api/leads`);
+  console.log(`   URL: ${import.meta.env.VITE_API_SERVER_URL}/api/leads`);
   console.log(`   Source: ${source}`);
   console.log(`   Prompt: ${prompt}`);
 
   const requestBody = { source, prompt, maxResults: 50 };
 
-  const response = await fetch("http://localhost:3001/api/leads", {
+  const response = await fetch(`${import.meta.env.VITE_API_SERVER_URL}/api/leads`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(requestBody),

@@ -22,7 +22,7 @@ export const exportToExcel = (leads) => {
 
 export const exportToGoogleSheets = async (leads) => {
   try {
-    const response = await axios.post('http://localhost:3001/api/google-sheets/export', { leads });
+    const response = await axios.post(`${import.meta.env.VITE_API_SERVER_URL}/api/google-sheets/export`, { leads });
     alert(response.data.message || '✅ Leads exported to Google Sheets');
   } catch (err) {
     alert('❌ Failed to export to Google Sheets');

@@ -48,7 +48,7 @@ const Chat = ({ selectedSource, conversation, onSendMessage, onBotResponse }) =>
       console.log(`\n🌐 PREPARING API REQUEST:`);
       console.log(`   🎯 Source: "${source}"`);
       console.log(`   📝 Prompt: "${userInput}"`);
-      console.log(`   🔗 Backend URL: http://localhost:3001/api/leads`);
+      console.log(`   🔗 Backend URL: ${import.meta.env.VITE_API_SERVER_URL}/api/leads`);
 
       // For scraper, use Server-Sent Events for real-time progress
       // Use regular API call for all sources including scraper
