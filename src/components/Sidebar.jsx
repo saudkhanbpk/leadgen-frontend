@@ -47,7 +47,7 @@ const Sidebar = ({
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="p-4 border-b border-white/10">
         <h1 className="text-xl font-bold text-white mb-4">Lead Generator</h1>
@@ -61,7 +61,7 @@ const Sidebar = ({
       </div>
 
       {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
         <h2 className="text-sm font-medium text-white/60 mb-3 uppercase tracking-wide">
           Conversations
         </h2>

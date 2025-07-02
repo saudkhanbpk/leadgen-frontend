@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Chat from './components/Chat';
 import ExportModal from './components/ExportModal';
-import LeadsTable from './components/LeadsTable';
 
 function App() {
   const [conversations, setConversations] = useState([
@@ -159,16 +158,16 @@ function App() {
   };
 
   return (
-    <div 
+    <div
       className="flex h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 overflow-hidden"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
-      {/* Sidebar */}
-      <div 
+      {/* Sidebar - Fixed height and width */}
+      <div
         ref={sidebarRef}
-        className="relative flex-shrink-0 bg-white/10 backdrop-blur-lg border-r border-white/20"
-        style={{ width: sidebarWidth }}
+        className="relative flex-shrink-0 bg-white/10 backdrop-blur-lg border-r border-white/20 h-full"
+        style={{ width: sidebarWidth, minWidth: sidebarWidth, maxWidth: sidebarWidth }}
       >
         <Sidebar
           conversations={conversations}
@@ -186,11 +185,11 @@ function App() {
         />
       </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Bar: Source Selector (top left) and Export Button (top right) */}
-        <div className="flex justify-between items-center px-6 py-4 bg-gradient-to-r from-slate-900 to-blue-900 relative z-20">
-          {/* Source Selector - left */}
+      {/* Main Chat Area - Fixed height and proper constraints */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        {/* Top Bar: Lead Source Selector moved to right */}
+        <div className="flex justify-end items-center px-6 py-4 bg-gradient-to-r from-slate-900 to-blue-900 relative z-20">
+          {/* Source Selector - moved to right */}
           <div>
             <label className="mr-2 font-semibold text-white">Lead Source:</label>
             <select
@@ -204,14 +203,8 @@ function App() {
               <option  value="scraper">Scraper</option>
             </select>
           </div>
-          {/* Export Button - right */}
-          <button
-            className="bg-green-600 text-white px-4 py-2 rounded"
-            onClick={() => setExportModalOpen(true)}
-          >
-            Export Leads
-          </button>
         </div>
+
         {/* Chat Section */}
         {activeConversation ? (
           <Chat
@@ -244,13 +237,7 @@ function App() {
         )}
       </div>
 
-      {/* Leads Table and Export Modal - positioned to not cover top bar */}
-      {leadsData.length > 0 && (
-        <div className="absolute left-0 right-0 p-4 bg-white/95 backdrop-blur-sm border-t border-gray-300 z-10"
-             style={{ top: '80px', bottom: '0px', overflowY: 'auto' }}>
-          <LeadsTable leads={leadsData} />
-        </div>
-      )}
+
 
       {/* Export Modal */}
       <ExportModal

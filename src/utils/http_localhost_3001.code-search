@@ -1,0 +1,26 @@
+# Query: http://localhost:3001
+
+13 results - 5 files
+
+frontend\src\api\index.js:
+  3:   console.log(`   URL: http://localhost:3001/api/leads`);
+  9:   const response = await fetch("http://localhost:3001/api/leads", {
+
+frontend\src\components\CaptchaModal.jsx:
+  15:       const response = await fetch('http://localhost:3001/api/captcha/solve', {
+
+frontend\src\components\Chat.jsx:
+   19:       const eventSource = new EventSource(`http://localhost:3001/api/leads/stream?source=${source}&prompt=${encodeURIComponent(prompt)}&maxResults=50`);
+  137:       console.log(`   🔗 Backend URL: http://localhost:3001/api/leads`);
+  335:         const response = await fetch('http://localhost:3001/api/captcha/resume-scraping', {
+
+frontend\src\components\MessageBubble.jsx:
+   27:           const response = await fetch('http://localhost:3001/api/auth/validate', {
+  153:     const authUrl = `http://localhost:3001/api/auth/google`;
+  181:         const refreshResponse = await fetch('http://localhost:3001/api/auth/refresh', {
+  201:       const response = await fetch('http://localhost:3001/api/export/google-sheets/list', {
+  241:       const response = await fetch('http://localhost:3001/api/export/google-sheets', {
+  278:       const response = await fetch('http://localhost:3001/api/export/google-sheets', {
+
+frontend\src\utils\exportUtils.js:
+  25:     const response = await axios.post('http://localhost:3001/api/google-sheets/export', { leads });
