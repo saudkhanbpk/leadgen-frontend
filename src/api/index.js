@@ -22,6 +22,20 @@ export const fetchLeads = async (prompt, source) => {
   const data = await response.json();
   console.log(`📥 API Response received:`, data);
 
+  // Validate the response structure
+  if (data && typeof data === 'object') {
+    // Ensure leads is always an array
+    if (data.leads && !Array.isArray(data.leads)) {
+      console.error('❌ API Error: data.leads is not an array:', data.leads);
+      data.leads = [];
+    }
+
+    // If no leads property but data is an array, assume it's the leads array
+    if (!data.leads && Array.isArray(data)) {
+      return data;
+    }
+  }
+
   // Return the full response so we can access both leads and meta information
   return data;
 };

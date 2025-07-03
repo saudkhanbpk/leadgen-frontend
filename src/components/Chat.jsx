@@ -175,7 +175,28 @@ const Chat = ({ selectedSource, conversation, onSendMessage, onBotResponse }) =>
           return;
         }
 
-        const leadData = response.leads || response;
+        // Ensure leadData is always an array
+        let leadData = response.leads || response;
+
+        // Additional safety check - ensure leadData is an array
+        if (!Array.isArray(leadData)) {
+          console.error('❌ CRITICAL ERROR: leadData is not an array:', leadData);
+          console.error('❌ Full response:', response);
+
+          // Try to extract leads from different possible response structures
+          if (leadData && typeof leadData === 'object') {
+            if (leadData.data && Array.isArray(leadData.data)) {
+              leadData = leadData.data;
+            } else if (leadData.results && Array.isArray(leadData.results)) {
+              leadData = leadData.results;
+            } else {
+              leadData = [];
+            }
+          } else {
+            leadData = [];
+          }
+        }
+
         console.log(`✅ Received ${leadData.length} leads from ${source}`);
 
         if (leadData.length === 0) {
@@ -240,7 +261,27 @@ const Chat = ({ selectedSource, conversation, onSendMessage, onBotResponse }) =>
         return;
       }
 
-      const leadData = response.leads || response;
+      // Ensure leadData is always an array
+      let leadData = response.leads || response;
+
+      // Additional safety check - ensure leadData is an array
+      if (!Array.isArray(leadData)) {
+        console.error('❌ CRITICAL ERROR: leadData is not an array:', leadData);
+        console.error('❌ Full response:', response);
+
+        // Try to extract leads from different possible response structures
+        if (leadData && typeof leadData === 'object') {
+          if (leadData.data && Array.isArray(leadData.data)) {
+            leadData = leadData.data;
+          } else if (leadData.results && Array.isArray(leadData.results)) {
+            leadData = leadData.results;
+          } else {
+            leadData = [];
+          }
+        } else {
+          leadData = [];
+        }
+      }
 
       console.log(`✅ Received ${leadData.length} leads from ${source}`);
 
@@ -346,7 +387,27 @@ const Chat = ({ selectedSource, conversation, onSendMessage, onBotResponse }) =>
         const result = await response.json();
 
         if (result.success) {
-          const leadData = result.leads || [];
+          // Ensure leadData is always an array
+          let leadData = result.leads || [];
+
+          // Additional safety check - ensure leadData is an array
+          if (!Array.isArray(leadData)) {
+            console.error('❌ CRITICAL ERROR: leadData is not an array:', leadData);
+            console.error('❌ Full result:', result);
+
+            // Try to extract leads from different possible response structures
+            if (leadData && typeof leadData === 'object') {
+              if (leadData.data && Array.isArray(leadData.data)) {
+                leadData = leadData.data;
+              } else if (leadData.results && Array.isArray(leadData.results)) {
+                leadData = leadData.results;
+              } else {
+                leadData = [];
+              }
+            } else {
+              leadData = [];
+            }
+          }
 
           if (leadData.length === 0) {
             const errorContent = `❌ No leads found for "${pendingRequest.prompt}". Please try a different search term or location.`;
