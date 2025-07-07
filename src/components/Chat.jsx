@@ -8,7 +8,7 @@ const Chat = ({ selectedSource, conversation, onSendMessage, onBotResponse }) =>
   const [loading, setLoading] = useState(false);
   const [source, setSource] = useState(selectedSource || 'apify');
   const [progress, setProgress] = useState({ show: false, message: '', percent: 0, leadsFound: 0 });
-  const [captchaModal, setCaptchaModal] = useState({ show: false, siteKey: '', sessionId: '' });
+  const [captchaModal, setCaptchaModal] = useState({ show: false, siteKey: '', sessionId: '', prompt: '' });
   const [pendingRequest, setPendingRequest] = useState(null); // Store request to retry after CAPTCHA
   const messagesEndRef = useRef(null);
 
@@ -161,7 +161,8 @@ const Chat = ({ selectedSource, conversation, onSendMessage, onBotResponse }) =>
           setCaptchaModal({
             show: true,
             siteKey: response.siteKey,
-            sessionId: response.sessionId
+            sessionId: response.sessionId,
+            prompt: userInput
           });
 
           // Show message to user about CAPTCHA
@@ -175,26 +176,32 @@ const Chat = ({ selectedSource, conversation, onSendMessage, onBotResponse }) =>
           return;
         }
 
-        // Ensure leadData is always an array
-        let leadData = response.leads || response;
+        // Handle API error responses gracefully
+        if (response.error || (response.message && !response.leads && !Array.isArray(response))) {
+          console.error('❌ API returned error response:', response);
+          throw new Error(response.error || response.message || 'API returned an error');
+        }
 
-        // Additional safety check - ensure leadData is an array
-        if (!Array.isArray(leadData)) {
-          console.error('❌ CRITICAL ERROR: leadData is not an array:', leadData);
-          console.error('❌ Full response:', response);
+        // Ensure leadData is always an array - handle various response structures
+        let leadData = response.leads || response.data || response.results || response;
 
-          // Try to extract leads from different possible response structures
-          if (leadData && typeof leadData === 'object') {
-            if (leadData.data && Array.isArray(leadData.data)) {
-              leadData = leadData.data;
-            } else if (leadData.results && Array.isArray(leadData.results)) {
-              leadData = leadData.results;
-            } else {
-              leadData = [];
-            }
+        // Convert to safe array - handle all possible response structures
+        const safeLeadData = Array.isArray(leadData) ? leadData : [];
+
+        if (safeLeadData.length === 0 && leadData && typeof leadData === 'object') {
+          console.error('❌ CRITICAL ERROR: No valid lead data found in response:', response);
+          // Try to extract from nested structures
+          if (leadData.leads && Array.isArray(leadData.leads)) {
+            leadData = leadData.leads;
+          } else if (leadData.data && Array.isArray(leadData.data)) {
+            leadData = leadData.data;
+          } else if (leadData.results && Array.isArray(leadData.results)) {
+            leadData = leadData.results;
           } else {
             leadData = [];
           }
+        } else {
+          leadData = safeLeadData;
         }
 
         console.log(`✅ Received ${leadData.length} leads from ${source}`);
@@ -247,7 +254,8 @@ const Chat = ({ selectedSource, conversation, onSendMessage, onBotResponse }) =>
         setCaptchaModal({
           show: true,
           siteKey: response.siteKey,
-          sessionId: response.sessionId
+          sessionId: response.sessionId,
+          prompt: userInput
         });
 
         // Show message to user about CAPTCHA
@@ -261,26 +269,32 @@ const Chat = ({ selectedSource, conversation, onSendMessage, onBotResponse }) =>
         return;
       }
 
-      // Ensure leadData is always an array
-      let leadData = response.leads || response;
+      // Handle API error responses gracefully
+      if (response.error || (response.message && !response.leads && !Array.isArray(response))) {
+        console.error('❌ API returned error response:', response);
+        throw new Error(response.error || response.message || 'API returned an error');
+      }
 
-      // Additional safety check - ensure leadData is an array
-      if (!Array.isArray(leadData)) {
-        console.error('❌ CRITICAL ERROR: leadData is not an array:', leadData);
-        console.error('❌ Full response:', response);
+      // Ensure leadData is always an array - handle various response structures
+      let leadData = response.leads || response.data || response.results || response;
 
-        // Try to extract leads from different possible response structures
-        if (leadData && typeof leadData === 'object') {
-          if (leadData.data && Array.isArray(leadData.data)) {
-            leadData = leadData.data;
-          } else if (leadData.results && Array.isArray(leadData.results)) {
-            leadData = leadData.results;
-          } else {
-            leadData = [];
-          }
+      // Convert to safe array - handle all possible response structures
+      const safeLeadData = Array.isArray(leadData) ? leadData : [];
+
+      if (safeLeadData.length === 0 && leadData && typeof leadData === 'object') {
+        console.error('❌ CRITICAL ERROR: No valid lead data found in response:', response);
+        // Try to extract from nested structures
+        if (leadData.leads && Array.isArray(leadData.leads)) {
+          leadData = leadData.leads;
+        } else if (leadData.data && Array.isArray(leadData.data)) {
+          leadData = leadData.data;
+        } else if (leadData.results && Array.isArray(leadData.results)) {
+          leadData = leadData.results;
         } else {
           leadData = [];
         }
+      } else {
+        leadData = safeLeadData;
       }
 
       console.log(`✅ Received ${leadData.length} leads from ${source}`);
@@ -355,7 +369,7 @@ const Chat = ({ selectedSource, conversation, onSendMessage, onBotResponse }) =>
 
   const handleCaptchaSolved = async (token) => {
     console.log('✅ CAPTCHA solved in Chat component:', token);
-    setCaptchaModal({ show: false, siteKey: '', sessionId: '' });
+    setCaptchaModal({ show: false, siteKey: '', sessionId: '', prompt: '' });
 
     // Show success message
     const successMessage = `✅ CAPTCHA solved successfully! Restarting scraping process...`;
@@ -387,26 +401,32 @@ const Chat = ({ selectedSource, conversation, onSendMessage, onBotResponse }) =>
         const result = await response.json();
 
         if (result.success) {
-          // Ensure leadData is always an array
-          let leadData = result.leads || [];
+          // Handle API error responses gracefully
+          if (result.error || (result.message && !result.leads && !Array.isArray(result))) {
+            console.error('❌ API returned error response:', result);
+            throw new Error(result.error || result.message || 'API returned an error');
+          }
 
-          // Additional safety check - ensure leadData is an array
-          if (!Array.isArray(leadData)) {
-            console.error('❌ CRITICAL ERROR: leadData is not an array:', leadData);
-            console.error('❌ Full result:', result);
+          // Ensure leadData is always an array - handle various response structures
+          let leadData = result.leads || result.data || result.results || result;
 
-            // Try to extract leads from different possible response structures
-            if (leadData && typeof leadData === 'object') {
-              if (leadData.data && Array.isArray(leadData.data)) {
-                leadData = leadData.data;
-              } else if (leadData.results && Array.isArray(leadData.results)) {
-                leadData = leadData.results;
-              } else {
-                leadData = [];
-              }
+          // Convert to safe array - handle all possible response structures
+          const safeLeadData = Array.isArray(leadData) ? leadData : [];
+
+          if (safeLeadData.length === 0 && leadData && typeof leadData === 'object') {
+            console.error('❌ CRITICAL ERROR: No valid lead data found in result:', result);
+            // Try to extract from nested structures
+            if (leadData.leads && Array.isArray(leadData.leads)) {
+              leadData = leadData.leads;
+            } else if (leadData.data && Array.isArray(leadData.data)) {
+              leadData = leadData.data;
+            } else if (leadData.results && Array.isArray(leadData.results)) {
+              leadData = leadData.results;
             } else {
               leadData = [];
             }
+          } else {
+            leadData = safeLeadData;
           }
 
           if (leadData.length === 0) {
@@ -445,7 +465,7 @@ const Chat = ({ selectedSource, conversation, onSendMessage, onBotResponse }) =>
 
   const handleCaptchaClose = () => {
     console.log('❌ CAPTCHA modal closed');
-    setCaptchaModal({ show: false, siteKey: '', sessionId: '' });
+    setCaptchaModal({ show: false, siteKey: '', sessionId: '', prompt: '' });
     setPendingRequest(null); // Clear pending request
 
     // Show cancellation message
@@ -523,6 +543,7 @@ const Chat = ({ selectedSource, conversation, onSendMessage, onBotResponse }) =>
         onSolved={handleCaptchaSolved}
         siteKey={captchaModal.siteKey}
         sessionId={captchaModal.sessionId}
+        prompt={captchaModal.prompt}
       />
     </div>
   );
