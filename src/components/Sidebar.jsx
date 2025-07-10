@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, MessageSquare, Edit3, Trash2, Check, X } from 'lucide-react';
+import { Plus, MessageSquare, Edit3, Trash2, Check, X, MailIcon, SearchIcon } from 'lucide-react';
 
 const Sidebar = ({
   conversations,
@@ -7,7 +7,8 @@ const Sidebar = ({
   onConversationSelect,
   onNewConversation,
   onDeleteConversation,
-  onUpdateTitle
+  onUpdateTitle,
+  onChangeScreen
 }) => {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
@@ -32,7 +33,8 @@ const Sidebar = ({
 
   const formatDate = (date) => {
     const now = new Date();
-    const diff = now.getTime() - date.getTime();
+    const parsedDate = new Date(date);
+    const diff = now.getTime() - parsedDate.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
     if (days === 0) {
@@ -51,13 +53,34 @@ const Sidebar = ({
       {/* Header */}
       <div className="p-4 border-b border-white/10">
         <h1 className="text-xl font-bold text-white mb-4">Lead Generator</h1>
-        <button
-          onClick={onNewConversation}
-          className="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 hover:scale-[1.02]"
-        >
-          <Plus size={20} />
-          <span className="font-medium">New Chat</span>
-        </button>
+        <div className="flex flex-row items-center space-x-2 mb-2">
+          {/* Lead Button */}
+          <button
+            onClick={() => {onChangeScreen('lead'); onChangeScreen('chat')}}
+            className="p-1 hover:bg-blue-500 rounded flex items-center justify-center"
+            title="Leads"
+          >
+            <SearchIcon size={19} />
+          </button>
+          {/* Email Icon */}
+          <button
+            onClick={() => onChangeScreen('email')}
+            className="p-1 hover:bg-blue-500 rounded flex items-center justify-center"
+            title="Email"
+          >
+            <MailIcon size={19} />
+          </button>
+        </div>
+
+        {/* New Chat Button */}
+        <div className="flex flex-col items-center space-y-2">
+          <button
+            onClick={()=>{onNewConversation(); onChangeScreen('chat')}}
+            className="bg-blue-600 text-white p-2 rounded w-full text-center transition-all duration-200 hover:scale-[1.02]"
+          >
+            New Chat
+          </button>
+        </div>
       </div>
 
       {/* Conversations List */}
@@ -66,15 +89,16 @@ const Sidebar = ({
           Conversations
         </h2>
         
-        {conversations.map((conversation) => (
+        {conversations?.map((conversation) => (
           <div
             key={conversation.id}
+            
             className={`group relative p-3 rounded-lg cursor-pointer transition-all duration-200 hover:scale-[1.01] ${
               activeConversationId === conversation.id
                 ? 'bg-blue-600/20 border border-blue-400/30'
                 : 'bg-white/5 hover:bg-white/10 border border-transparent'
             }`}
-            onClick={() => onConversationSelect(conversation.id)}
+            onClick={() => {onConversationSelect(conversation.id);onChangeScreen('chat')}}
           >
             <div className="flex items-start gap-3">
               <div className={`mt-1 p-1.5 rounded-full ${
@@ -164,12 +188,12 @@ const Sidebar = ({
         ))}
       </div>
 
-      {/* Footer */}
+      {/* Footer
       <div className="p-4 border-t border-white/10">
         <p className="text-xs text-white/40 text-center">
           AI Lead Generation Assistant
         </p>
-      </div>
+      </div> */}
     </div>
   );
 };

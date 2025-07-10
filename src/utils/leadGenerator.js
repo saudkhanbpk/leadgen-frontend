@@ -46,7 +46,7 @@ export const generateLeads = async (
     case 'apollo':
       return await fetchLeadsFromApollo(prompt, maxResults);
     case 'scraper':
-      return await scrapeLeadsWithSelenium(prompt); // ✅ Already returns deduplicated leads
+      return await scrapeLeadsWithSelenium(prompt); 
     default:
       throw new Error('Unknown lead source');
   }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { User, Bot, Download, FileSpreadsheet, Mail, Phone, MapPin, Building } from 'lucide-react';
 
-const MessageBubble = ({ message }) => {
+const MessageBubble = ({ message, onSendEmails }) => {
   const isUser = message.type === 'user';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -66,27 +66,61 @@ const MessageBubble = ({ message }) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Helper function to format leads to HubSpot Contacts Template structure
+  const formatLeadsToHubspotTemplate = (leads) => {
+    return leads.map(lead => {
+      // Split name into first and last name
+      const nameParts = (lead.name || '').trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Extract city from address or location
+      let city = '';
+      if (lead.address) {
+        // Try to extract city from address (usually after comma)
+        const addressParts = lead.address.split(',');
+        city = addressParts.length > 1 ? addressParts[addressParts.length - 2].trim() : lead.address.trim();
+      } else if (lead.location) {
+        city = lead.location;
+      }
+
+      return {
+        'First Name': firstName,
+        'Last Name': lastName,
+        'Email Address': lead.email || '',
+        'Phone Number': lead.phone || '',
+        'City': city
+        // 'Lifecycle Stage': 'Lead',
+        // 'Contact Owner': '',
+        // 'Favorite Ice Cream Flavor': ''
+      };
+    });
+  };
+
   const downloadCSV = () => {
     if (!message.leads || message.leads.length === 0) return;
-    
-    const headers = ['Name', 'Phone', 'Address', 'Email', 'Company', 'Website'];
+
+    const formattedLeads = formatLeadsToHubspotTemplate(message.leads);
+    const headers = ['First Name', 'Last Name', 'Email Address', 'Phone Number', 'City']; // 'Lifecycle Stage', 'Contact Owner', 'Favorite Ice Cream Flavor'
     const csvContent = [
       headers.join(','),
-      ...message.leads.map(lead => [
-        `"${lead.name}"`,
-        `"${lead.phone}"`,
-        `"${lead.address}"`,
-        `"${lead.email || ''}"`,
-        `"${lead.company || ''}"`,
-        `"${lead.website || ''}"`
+      ...formattedLeads.map(lead => [
+        `"${lead['First Name']}"`,
+        `"${lead['Last Name']}"`,
+        `"${lead['Email Address']}"`,
+        `"${lead['Phone Number']}"`,
+        `"${lead['City']}"`
+        // `"${lead['Lifecycle Stage']}"`,
+        // `"${lead['Contact Owner']}"`,
+        // `"${lead['Favorite Ice Cream Flavor']}"`
       ].join(','))
     ].join('\n');
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `leads-${Date.now()}.csv`;
+    a.download = `hubspot-leads-${Date.now()}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -94,11 +128,12 @@ const MessageBubble = ({ message }) => {
   const downloadExcel = () => {
     if (!message.leads || message.leads.length === 0) return;
 
-    const worksheet = XLSX.utils.json_to_sheet(message.leads);
+    const formattedLeads = formatLeadsToHubspotTemplate(message.leads);
+    const worksheet = XLSX.utils.json_to_sheet(formattedLeads);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Leads');
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'HubSpot Leads');
 
-    XLSX.writeFile(workbook, `leads-${Date.now()}.xlsx`);
+    XLSX.writeFile(workbook, `hubspot-leads-${Date.now()}.xlsx`);
   };
 
   const handleGoogleSheets = () => {
@@ -244,7 +279,7 @@ const MessageBubble = ({ message }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          leads: message.leads,
+          leads: formatLeadsToHubspotTemplate(message.leads),
           token: authToken,
           createNew: false,
           spreadsheetId: selectedSheet
@@ -281,7 +316,7 @@ const MessageBubble = ({ message }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          leads: message.leads,
+          leads: formatLeadsToHubspotTemplate(message.leads),
           token: authToken,
           createNew: true,
           newSheetTitle: newSheetTitle
@@ -314,6 +349,14 @@ const MessageBubble = ({ message }) => {
     setShowGoogleModal(false);
     alert('✅ Google account disconnected. You will need to authenticate again for future exports.');
   };
+  const handleSendEmails = () => {
+    if (message.leads && message.leads.length > 0 && typeof onSendEmails === 'function') {
+      onSendEmails(message.leads);
+    } else {
+      alert('No leads available to send emails.');
+    }
+  };
+
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} items-start gap-3`}>
@@ -376,11 +419,18 @@ const MessageBubble = ({ message }) => {
                       </button>
                     )}
                   </div>
+                  <button
+                    onClick={handleSendEmails}
+                    className="flex items-center gap-1 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-xs text-white rounded-lg transition-colors"
+                  >
+                    <Mail size={12} />
+                    Email
+                  </button>
                 </div>
               </div>
               
               <div className="space-y-3 max-h-60 overflow-y-auto">
-                {message.leads.slice(0, 5).map((lead, index) => (
+                {Array.isArray(message.leads) && message.leads.slice(0, 5).map((lead, index) => (
                   <div key={index} className="p-3 bg-black/20 rounded-lg text-sm">
                     <div className="font-medium mb-2">{lead.name}</div>
                     <div className="space-y-1 text-xs text-white/80">
@@ -407,8 +457,8 @@ const MessageBubble = ({ message }) => {
                     </div>
                   </div>
                 ))}
-                
-                {message.leads.length > 5 && (
+
+                {Array.isArray(message.leads) && message.leads.length > 5 && (
                   <div className="text-center text-xs text-white/60 py-2">
                     +{message.leads.length - 5} more leads available for export
                   </div>

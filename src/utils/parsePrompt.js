@@ -11,6 +11,7 @@ export const extractLocation = (text) => {
 };
 
 export const extractLeadCount = (text) => {
-  const match = text.match(/(?:generate|get|need)\s+(\d+)\s+(?:leads|contacts)/i);
-  return match ? parseInt(match[1], 10) : 100;
+  // Use a clean RegExp pattern that looks for "generate X" specifically
+  const match = text.match(/generate\s+(\d+)/i);
+  return match ? parseInt(match[1], 10) : 50; // Default to 50 only if no number found
 };

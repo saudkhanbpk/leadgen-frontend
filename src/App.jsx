@@ -1,82 +1,53 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Chat from './components/Chat';
-import ExportModal from './components/ExportModal';
+import ExportModal from './components/ExportModal.jsx';
+import LeadsTable from './components/LeadsTable.jsx';
+import EmailSection from './components/EmailSender';
 
 function App() {
-  const [conversations, setConversations] = useState([
-    {
-      id: '1',
-      title: 'Solar Leads Discussion',
-      messages: [
-        {
-          id: '1',
-          type: 'bot',
-          content: 'Hello! I\'m your lead generation assistant. I can help you generate high-quality leads for any business niche. Just tell me what you need!',
-          timestamp: new Date()
-        }
-      ],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-  ]);
-
-  const [activeConversationId, setActiveConversationId] = useState('1');
+  const [conversations, setConversations] = useState([]);
+  const [activeConversationId, setActiveConversationId] = useState(null);
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
   const [leadsData, setLeadsData] = useState([]);
+  const [emailLeads, setEmailLeads] = useState([]);
   const [isExportModalOpen, setExportModalOpen] = useState(false);
   const [selectedSource, setSelectedSource] = useState('scraper');
+  const [screen, setScreen] = useState('chat');
   const sidebarRef = useRef(null);
 
   const activeConversation = conversations.find(c => c.id === activeConversationId);
-
-  // Handle Google Auth Success redirect
   useEffect(() => {
-    const handleGoogleAuthSuccess = () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const authDataParam = urlParams.get('authData');
+    const stored = localStorage.getItem('conversations');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Keep leads data on app restart - don't clear them
+      setConversations(parsed);
+      setActiveConversationId(parsed[0]?.id || null);
 
-      if (window.location.pathname === '/google-auth-success' && authDataParam) {
-        try {
-          const authData = JSON.parse(decodeURIComponent(authDataParam));
+      // Restore leads data from the latest conversation with leads
+      const latestConversationWithLeads = parsed.find(conv =>
+        conv.messages && conv.messages.some(msg => msg.leads && msg.leads.length > 0)
+      );
 
-          // Store auth data persistently
-          localStorage.setItem('googleAuthData', JSON.stringify(authData));
+      if (latestConversationWithLeads) {
+        const latestMessageWithLeads = latestConversationWithLeads.messages
+          .reverse()
+          .find(msg => msg.leads && msg.leads.length > 0);
 
-          // Send message to opener window (the original tab)
-          if (window.opener) {
-            window.opener.postMessage({
-              type: 'GOOGLE_AUTH_SUCCESS',
-              authData: authData
-            }, window.location.origin);
-            window.close();
-          } else {
-            // If no opener, store and redirect back to main app
-            sessionStorage.setItem('googleAuthData', JSON.stringify(authData));
-            window.location.href = '/';
-          }
-        } catch (error) {
-          console.error('Failed to parse auth data:', error);
+        if (latestMessageWithLeads && latestMessageWithLeads.leads) {
+          setLeadsData(latestMessageWithLeads.leads);
         }
       }
-
-      // Check if we have stored auth data from redirect
-      const storedAuthData = sessionStorage.getItem('googleAuthData');
-      if (storedAuthData) {
-        sessionStorage.removeItem('googleAuthData');
-        try {
-          const authData = JSON.parse(storedAuthData);
-          // Trigger the Google Sheets export with stored auth data
-          window.dispatchEvent(new CustomEvent('googleAuthComplete', { detail: { authData } }));
-        } catch (error) {
-          console.error('Failed to parse stored auth data:', error);
-        }
-      }
-    };
-
-    handleGoogleAuthSuccess();
+    } else {
+      createNewConversation();
+    }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('conversations', JSON.stringify(conversations));
+  }, [conversations]);
 
   const updateConversation = (conversationId, updates) => {
     setConversations(prev =>
@@ -125,15 +96,10 @@ function App() {
   };
 
   const deleteConversation = (conversationId) => {
-    setConversations(prev => prev.filter(c => c.id !== conversationId));
-
+    const updated = conversations.filter(c => c.id !== conversationId);
+    setConversations(updated);
     if (activeConversationId === conversationId) {
-      const remaining = conversations.filter(c => c.id !== conversationId);
-      if (remaining.length > 0) {
-        setActiveConversationId(remaining[0].id);
-      } else {
-        createNewConversation();
-      }
+      setActiveConversationId(updated[0]?.id || null);
     }
   };
 
@@ -148,7 +114,6 @@ function App() {
 
   const handleMouseMove = (e) => {
     if (!isResizing) return;
-
     const newWidth = Math.max(250, Math.min(500, e.clientX));
     setSidebarWidth(newWidth);
   };
@@ -157,13 +122,52 @@ function App() {
     setIsResizing(false);
   };
 
+  useEffect(() => {
+    const handleGoogleAuthSuccess = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const authDataParam = urlParams.get('authData');
+
+      if (window.location.pathname === '/google-auth-success' && authDataParam) {
+        try {
+          const authData = JSON.parse(decodeURIComponent(authDataParam));
+          localStorage.setItem('googleAuthData', JSON.stringify(authData));
+
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'GOOGLE_AUTH_SUCCESS',
+              authData: authData
+            }, window.location.origin);
+            window.close();
+          } else {
+            sessionStorage.setItem('googleAuthData', JSON.stringify(authData));
+            window.location.href = '/';
+          }
+        } catch (error) {
+          console.error('Failed to parse auth data:', error);
+        }
+      }
+
+      const storedAuthData = sessionStorage.getItem('googleAuthData');
+      if (storedAuthData) {
+        sessionStorage.removeItem('googleAuthData');
+        try {
+          const authData = JSON.parse(storedAuthData);
+          window.dispatchEvent(new CustomEvent('googleAuthComplete', { detail: { authData } }));
+        } catch (error) {
+          console.error('Failed to parse stored auth data:', error);
+        }
+      }
+    };
+
+    handleGoogleAuthSuccess();
+  }, []);
+
   return (
     <div
       className="flex h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 overflow-hidden"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
-      {/* Sidebar - Fixed height and width */}
       <div
         ref={sidebarRef}
         className="relative flex-shrink-0 bg-white/10 backdrop-blur-lg border-r border-white/20 h-full"
@@ -176,37 +180,35 @@ function App() {
           onNewConversation={createNewConversation}
           onDeleteConversation={deleteConversation}
           onUpdateTitle={updateConversationTitle}
+          onChangeScreen={setScreen}
         />
-        
-        {/* Resize Handle */}
         <div
           className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400/50 transition-colors"
           onMouseDown={handleMouseDown}
         />
       </div>
 
-      {/* Main Chat Area - Fixed height and proper constraints */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        {/* Top Bar: Lead Source Selector moved to right */}
-        <div className="flex justify-end items-center px-6 py-4 bg-gradient-to-r from-slate-900 to-blue-900 relative z-20">
-          {/* Source Selector - moved to right */}
-          <div>
-            <label className="mr-2 font-semibold text-white">Lead Source:</label>
-            <select
-              value={selectedSource}
-              onChange={e => setSelectedSource(e.target.value)}
-              className="border border-gray-300 rounded px-2 py-1 text-black"
-              style={{ minWidth: 120 }}
-            >
-              <option value="apify">Apify</option>
-              <option value="apollo">Apollo</option>
-              <option  value="scraper">Scraper</option>
-            </select>
+        {/* Top Bar: only show on 'lead' screen */}
+        {screen === 'chat' && (
+          <div className="flex justify-end items-center px-6 py-4 bg-gradient-to-r from-slate-900 to-blue-900 relative z-20">
+            <div>
+              <label className="mr-2 font-semibold text-white">Lead Source:</label>
+              <select
+                value={selectedSource}
+                onChange={e => setSelectedSource(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1 text-black"
+                style={{ minWidth: 120 }}
+              >
+                <option value="apify">Apify</option>
+                <option value="apollo">Apollo</option>
+                <option value="scraper">Scraper</option>
+              </select>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Chat Section */}
-        {activeConversation ? (
+        {screen === 'chat' && activeConversation && (
           <Chat
             selectedSource={selectedSource}
             conversation={activeConversation}
@@ -215,31 +217,26 @@ function App() {
               content,
               timestamp: new Date()
             })}
-            onBotResponse={(content, leads) => addMessage(activeConversation.id, {
-              type: 'bot',
-              content,
-              timestamp: new Date(),
-              leads
-            })}
+            onBotResponse={(content, leads) => {
+              setLeadsData(leads || []);
+              addMessage(activeConversation.id, {
+                type: 'bot',
+                content,
+                timestamp: new Date(),
+                leads
+              });
+            }}
+            onSendEmails={(leads) => {
+              setEmailLeads(leads);
+              setScreen('email');
+            }}
           />
-        ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center text-white/60">
-              <p className="text-xl mb-4">No conversation selected</p>
-              <button
-                onClick={createNewConversation}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-              >
-                Start New Conversation
-              </button>
-            </div>
-          </div>
         )}
+
+        {screen === 'lead' && <LeadsTable />}
+        {screen === 'email' && <EmailSection scrapedLeads={emailLeads} goBack={() => setScreen('chat')} />}
       </div>
 
-
-
-      {/* Export Modal */}
       <ExportModal
         leads={leadsData}
         isOpen={isExportModalOpen}

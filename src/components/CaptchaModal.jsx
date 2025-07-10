@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 
-const CaptchaModal = ({ isOpen, onClose, onSolved, siteKey, sessionId }) => {
+const CaptchaModal = ({ isOpen, onClose, onSolved, siteKey, sessionId, prompt }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -18,8 +18,9 @@ const CaptchaModal = ({ isOpen, onClose, onSolved, siteKey, sessionId }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          token: token,
           sessionId: sessionId,
-          captchaToken: token
+          prompt: prompt
         }),
       });
 
