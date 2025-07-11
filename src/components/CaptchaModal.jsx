@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 
-const CaptchaModal = ({ isOpen, onClose, onSolved, siteKey, sessionId, prompt }) => {
+const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY; // ✅ dynamic key from .env
+
+const CaptchaModal = ({ isOpen, onClose, onSolved, sessionId, prompt }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -11,7 +13,6 @@ const CaptchaModal = ({ isOpen, onClose, onSolved, siteKey, sessionId, prompt })
     setError('');
 
     try {
-      // Send the token to backend
       const response = await fetch(`${import.meta.env.VITE_API_SERVER_URL}/api/captcha/solve`, {
         method: 'POST',
         headers: {
